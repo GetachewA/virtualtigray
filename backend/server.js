@@ -21,11 +21,21 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
 });
 
-app.use(cors({
-  origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((origin) => origin.trim()),
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+app.use(
+  cors({
+    origin: corsOrigin === '*'
+      ? true
+      : corsOrigin.split(',').map((origin) => origin.trim()),
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 app.use(express.json());
 
 async function initializeDatabase() {
@@ -342,13 +352,27 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-initializeDatabase()
-  .then(() => {
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`Virtual Tigray API listening on port ${port}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Failed to initialize database', error);
-    process.exit(1);
-  });
+async function startServer() {
+  const maxAttempts = Number(process.env.DB_CONNECT_ATTEMPTS || 30);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await initializeDatabase();
+      app.listen(port, '0.0.0.0', () => {
+        console.log(`Virtual Tigray API listening on port ${port}`);
+      });
+      return;
+    } catch (error) {
+      console.error(`Database initialization attempt ${attempt}/${maxAttempts} failed`, error.message);
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+      await sleep(2000);
+    }
+  }
+}
+
+startServer().catch((error) => {
+  console.error('Failed to initialize database', error);
+  process.exit(1);
+});

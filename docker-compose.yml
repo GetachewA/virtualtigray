@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: virtualtigray
       POSTGRES_USER: vtg_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-virtualtigray_local_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -32,12 +32,11 @@ services:
       DB_PORT: 5432
       DB_NAME: virtualtigray
       DB_USER: vtg_user
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      DB_PASSWORD: ${DB_PASSWORD:-virtualtigray_local_password}
+      JWT_SECRET: ${JWT_SECRET:-virtualtigray_local_jwt_secret_change_me}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     networks:
       - virtualtigray_network
     labels:
