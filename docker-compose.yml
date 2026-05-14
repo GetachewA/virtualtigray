@@ -1,9 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: virtualtigray_postgres
     restart: always
     environment:
       POSTGRES_DB: virtualtigray
@@ -15,14 +12,14 @@ services:
     networks:
       - virtualtigray_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vtg_user -d virtualtigray"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U vtg_user -d virtualtigray"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 20
+      start_period: 30s
 
   backend:
     image: node:18-alpine
-    container_name: virtualtigray_backend
     restart: always
     working_dir: /app
     volumes:
