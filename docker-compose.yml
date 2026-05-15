@@ -33,11 +33,16 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-virtualtigray_local_password}
       JWT_SECRET: ${JWT_SECRET:-virtualtigray_local_jwt_secret_change_me}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-      SERVICE_FQDN_BACKEND_3000: ${SERVICE_FQDN_BACKEND_3000:-virtualtigray-api.apps.apparium.ca}
     depends_on:
       - postgres
     expose:
       - "3000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.virtualtigray-api.rule=Host(`virtualtigray-api.apps.apparium.ca`) && PathPrefix(`/`)
+      - traefik.http.routers.virtualtigray-api.entrypoints=http,https
+      - traefik.http.services.virtualtigray-api.loadbalancer.server.port=3000
+      - coolify.managed=true
 
 volumes:
   postgres_data:
