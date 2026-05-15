@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: virtualtigray
+      POSTGRES_USER: vtg_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-virtualtigray_local_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U vtg_user -d virtualtigray"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  backend:
+    image: node:18-alpine
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "npm install --omit=dev && npm start"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: virtualtigray
+      DB_USER: vtg_user
+      DB_PASSWORD: ${DB_PASSWORD:-virtualtigray_local_password}
+      JWT_SECRET: ${JWT_SECRET:-virtualtigray_local_jwt_secret_change_me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      SERVICE_FQDN_BACKEND_3000: ${SERVICE_FQDN_BACKEND_3000:-virtualtigray-api.apps.apparium.ca}
+    depends_on:
+      - postgres
+    expose:
+      - "3000"
+
+volumes:
+  postgres_data:
